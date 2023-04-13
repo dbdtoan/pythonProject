@@ -3,10 +3,10 @@ import cv2
 from PIL import Image, ImageTk
 import numpy as np
 from deepface import DeepFace
-
+import os
 
 class APP_GUI(Frame):
-    def __init__(self,parent):
+    def __init__(self,parent,file_path):
         super().__init__(parent)
         self.cap = cv2.VideoCapture(0)
         # khởi tạo mô hình CascadeClassifier để nhận diện khuôn mặt
@@ -22,59 +22,53 @@ class APP_GUI(Frame):
         self.label = Label(self.Frame1)
         self.label.place(relx=0, rely=0, relheight=1 , relwidth= 0.5)
 
-        self.bntBack = Button(self.Frame1)
-        self.bntBack.place(relx=0, rely=0.9, relheight=0.1, relwidth=0.1)
-        self.bntBack.config(bg ="#FFCC99")
-        self.bntBack.config(text='''Back''')
-        self.bntBack.config(font=('Small Fonts',25))
-        self.bntBack.config(fg="#FFFFFF")
-        self.bntBack.config(activebackground="#FFCC99")
-        self.bntBack.config(activeforeground="#99FFFF")
-        self.bntBack.config(relief='flat',borderwidth=0,highlightthickness= 0)
-        self.bntBack.config(command=lambda: self.call_back())
+        self.btnBack = Button(self.Frame1)
+        self.btnBack.place(relx=0, rely=0.9, relheight=0.1, relwidth=0.1)
+        self.btnBack.config(bg ="#FFCC99")
+        self.btnBack.config(text='''Back''')
+        self.btnBack.config(font=('Small Fonts',25))
+        self.btnBack.config(fg="#FFFFFF")
+        self.btnBack.config(activebackground="#FFCC99")
+        self.btnBack.config(activeforeground="#99FFFF")
+        self.btnBack.config(relief='flat',borderwidth=0,highlightthickness= 0)
+        self.btnBack.config(command=lambda: self.call_back())
 
-        self.face_recog()
+        self.btnEx = Button(self.Frame1)
+        self.btnEx.place(relx=0.3, rely=0.9, relheight=0.1, relwidth=0.1)
+        self.btnEx.config(bg ="#FFCC99")
+        self.btnEx.config(text='''Extract''')
+        self.btnEx.config(font=('Small Fonts',25))
+        self.btnEx.config(fg="#FFFFFF")
+        self.btnEx.config(activebackground="#FFCC99")
+        self.btnEx.config(activeforeground="#99FFFF")
+        self.btnEx.config(relief='flat',borderwidth=0,highlightthickness= 0)
+        self.btnEx.config(command=lambda: self.face_recog())
 
-    def face_recog(self):
+
+
+        if(file_path ==" "):
+            self.face_recog_from_camera()
+        else:
+            self.face_recog_from_img(file_path)
+
+            self.btnEx.config(command=lambda: self.face_recog())
+
+    def face_recog_from_camera(self):
+        ret, frame = self.cap.read()
+        
         ret, frame = self.cap.read()
         if ret:
-            frame = self.detect_faces(frame)
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image = Image.fromarray(image)
-            photo = ImageTk.PhotoImage(image)
-            result = DeepFace.analyze(frame,actions=['emotion'],enforce_detection=False)
-            result2 = DeepFace.analyze(frame, actions=['gender'],enforce_detection=False)
-
-            # In kết quả
-            print(result2[0]['dominant_gender'])
-            print(result2[0]['gender'])
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            cv2.putText(frame,
-                result2[0]['dominant_gender']+" "+result[0]['dominant_emotion'],
-                (50,50),
-                font, 3,
-                (0, 0, 255),
-                2,
-                cv2.LINE_4)
-            print(result[0])
-            self.emj_url = f"F:/B20DCAT161/emojis/{result[0]['dominant_emotion']}.png"
-
-            from app import Photo
-            self.emj_result = Photo(self,self.emj_url)
-            self.emj_result.place(relx=0.6, rely= 0.1, relheight= 0.5, relwidth=0.4)
-            
-
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image = Image.fromarray(image)
-            photo = ImageTk.PhotoImage(image)
-            self.label.config(image=photo)
-            self.label.image = photo
-
-            
+           self.face_recog(frame)
     
         # lặp lại quá trình cập nhật khung hình
-        self.label.after(10, self.face_recog)
+        self.label.after(10, self.face_recog_from_camera)
             
+    def face_recog_from_img(self,img_path):
+        frame = cv2.imread(img_path)
+        self.face_recog(frame)
+
+        
+    
     def detect_faces(self,frame):
         # chuyển đổi khung hình thành ảnh xám để tăng tốc độ xử lý
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -85,43 +79,42 @@ class APP_GUI(Frame):
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
         return frame
     
-    def get_faces(self,frame):
-        confidence_threshold=0.5
-        # convert the frame into a blob to be ready for NN input
-        blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300), (104, 177.0, 123.0))
-        FACE_PROTO = 'D:/project_Py/res10_300x300_ssd_iter_140000_fp16.caffemodel'
-        FACE_MODEL = 'D:/project_Py/deploy.protottxt.txt'
-# GENDER_MODEL = 'D:/project_Py/deploy_gender.prototxt'
-# GENDER_PROTO = 'D:/project_Py\gender_net.caffemodel'
-# MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
-# GENDER_LIST = ['Male', 'Female']
-        face_net = cv2.dnn.readNetFromCaffe(FACE_MODEL, FACE_PROTO)
-        # set the image as input to the NN
-        face_net.setInput(blob)
-        # perform inference and get predictions
-        output = np.squeeze(face_net.forward())
-        # initialize the result list
-        faces = []
-        # Loop over the faces detected
-        for i in range(output.shape[0]):
-            confidence = output[i, 2]
-        if confidence > confidence_threshold:
-            box = output[i, 3:7] * \
-                np.array([frame.shape[1], frame.shape[0],
-                         frame.shape[1], frame.shape[0]])
-            # convert to integers
-            start_x, start_y, end_x, end_y = box.astype(np.int64)
-            # widen the box a little
-            start_x, start_y, end_x, end_y = start_x - \
-                10, start_y - 10, end_x + 10, end_y + 10
-            start_x = 0 if start_x < 0 else start_x
-            start_y = 0 if start_y < 0 else start_y
-            end_x = 0 if end_x < 0 else end_x
-            end_y = 0 if end_y < 0 else end_y
-            # append to our list
-            faces.append((start_x, start_y, end_x, end_y))
-        return faces
+    def face_recog(self,frame):
+            self.frame = self.detect_faces(frame)
+            
+            result = DeepFace.analyze(self.frame,actions=['emotion'],enforce_detection=True)
+            result2 = DeepFace.analyze(self.frame, actions=['gender'],enforce_detection=True)
 
+            # In kết quả
+            print(result2[0]['dominant_gender'])
+            print(result2[0]['gender'])
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            # cv2.putText(self.frame,
+            Rtext =    result2[0]['dominant_gender']+" "+result[0]['dominant_emotion']
+            #     (100,100),
+            #     font, 3,
+            #     (0, 0, 255),
+            #     2,
+            #     cv2.LINE_4)
+            print(result[0])
+            #self.emj_url = f"F:/B20DCAT161/emojis/{result[0]['dominant_emotion']}.png"
+            path = os.getcwd().replace("\\","/") +"/emojis/"
+            self.emj_url = (path+result[0]['dominant_emotion']+".png")
+
+            self.lbResult = Label(self,text = Rtext)
+            self.lbResult.place(relx=0.55, rely= 0.5, relheight= 0.5, relwidth= 0.4)
+
+            from app import Photo
+            self.emj_result = Photo(self,self.emj_url)
+            self.emj_result.place(relx=0.55, rely= 0.1, relheight= 0.6, relwidth=0.4)
+            
+
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image = Image.fromarray(image)
+            photo = ImageTk.PhotoImage(image)
+            self.label.config(image=photo)
+            self.label.image = photo
+    
     def call_back(self):
         self.cap.release()
         self.destroy()

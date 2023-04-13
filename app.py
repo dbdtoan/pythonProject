@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import filedialog
 from gui_app import APP_GUI
 from PIL import Image, ImageTk
 
@@ -9,14 +10,16 @@ class Photo(Frame):
         self.canvas = Canvas(self)
         self.canvas.config(bg ="#FFCC99")
         self.img = PhotoImage(file=path_to_img)
-
-        self.canvas.create_image(0, 0, anchor=NW, image=self.img)  
+        # px = parent.winfo_screenwidth()//2
+        # py = parent.winfo_screenheight()//2
+        # self.img.configure(width=px,height=py)
+        self.canvas.create_image(0, 0, anchor="nw", image=self.img)  
         self.canvas.place(relx=0, rely=0, relheight=1, relwidth=1)
 
 class BlinkingTitle(Frame):
     def __init__(self, parent, title, f):
         Frame.__init__(self, parent)
-        # self.config(bg= parent['bg'])
+        self.config(bg= parent['bg'])
         self.label = Label(self, text=title,font= f)
         self.label.config(bg = parent['bg'])
         self.label.pack(pady=20)
@@ -38,6 +41,7 @@ class MyMenu(Frame):
         self.title.place(relx = 0, rely= 0.1, relheight=0.4, relwidth=1)
         self.title.config(bg ="#FFCC99")
 
+        self.file_path=""
 
         self.Button1 = Button(self)
         self.Button1.place(relx=0.18, rely=0.3, relheight=0.12, relwidth=0.64)
@@ -61,7 +65,7 @@ class MyMenu(Frame):
         self.Button4.config(activebackground="#FFCC99")
         self.Button4.config(activeforeground="#99FFFF")
         self.Button4.config(relief='flat',borderwidth=0,highlightthickness= 0)
-        # self.Button4.config(command=self.call_start)
+        self.Button4.config(command=self.open_file)
         self.Button4.bind('<Enter>',self.on_enter)
         self.Button4.bind('<Leave>',self.on_leave)
 
@@ -94,21 +98,28 @@ class MyMenu(Frame):
         
     def on_enter(self,event):
         event.widget.config(fg='black')
-
+        
     def on_leave(self,event):
         event.widget.config(fg='white')
 
     def call_start(self):
-        appGui = APP_GUI(self.master)
+        self.file_path =" "
+        appGui = APP_GUI(self.master,self.file_path)
         appGui.place(relx=0, rely= 0, relheight= 1, relwidth=1)
- 
+
+    def open_file(self):
+        self.file_path = filedialog.askopenfilename()
+        appGui = APP_GUI(self.master,self.file_path)
+        appGui.place(relx=0, rely= 0, relheight= 1, relwidth=1)
+        
+        
 
 class Root(Tk):
     def __init__(self):
         super().__init__()
 
         self.title('Title')
-        self.geometry('1720x900')
+        self.geometry('1920x1080')
         # đặt hình dáng con trỏ chuột
         self.config(cursor="mouse")
 
